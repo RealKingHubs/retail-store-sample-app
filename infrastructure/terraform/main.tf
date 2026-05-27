@@ -65,15 +65,20 @@ resource "kubernetes_namespace_v1" "retail_app" {
 }
 
 resource "helm_release" "alb_controller" {
-  name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = "1.11.0"
+  name             = "aws-load-balancer-controller"
+  repository       = "https://aws.github.io/eks-charts"
+  chart            = "aws-load-balancer-controller"
+  namespace        = "kube-system"
+  version          = "1.11.0"
+  force_update     = true
+  cleanup_on_fail  = true
+  recreate_pods    = true
 
   values = [
     yamlencode({
       clusterName = var.cluster_name
+      vpcId       = module.vpc.vpc_id
+      region      = var.aws_region
       serviceAccount = {
         create = true
         name   = "aws-load-balancer-controller"
@@ -89,7 +94,6 @@ resource "helm_release" "alb_controller" {
     kubernetes_namespace_v1.retail_app
   ]
 }
-
 
 # Read MySQL credentials from Secrets Manager and create Kubernetes secret
 resource "kubernetes_secret_v1" "mysql_credentials" {
@@ -236,31 +240,45 @@ resource "kubernetes_cluster_role_binding_v1" "dev_view" {
   depends_on = [module.eks]
 }
 
-# Update aws-auth ConfigMap to map IAM user to Kubernetes user
-resource "kubernetes_config_map_v1_data" "aws_auth" {
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    mapUsers = yamlencode([
-      {
-        userarn  = module.iam.dev_user_arn
-        username = "bedrock-dev-view"
-        groups   = ["system:authenticated"]
-      }
-    ])
-    mapRoles = yamlencode([
-      {
-        rolearn  = module.eks.node_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = ["system:bootstrappers", "system:nodes"]
-      }
-    ])
-  }
-
-  force = true
+# Create EKS access entry and associate view policy for bedrock-dev-view IAM user
+resource "aws_eks_access_entry" "dev_view" {
+  cluster_name  = var.cluster_name
+  principal_arn = module.iam.dev_user_arn
+  type          = "STANDARD"
 
   depends_on = [module.eks]
+}
+
+resource "aws_eks_access_policy_association" "dev_view" {
+  cluster_name  = var.cluster_name
+  principal_arn = module.iam.dev_user_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.dev_view]
+}
+
+
+# Grant the cluster creator admin access to the cluster
+resource "aws_eks_access_entry" "admin" {
+  cluster_name  = var.cluster_name
+  principal_arn = "arn:aws:iam::093796422475:user/Start-Tech"
+  type          = "STANDARD"
+
+  depends_on = [module.eks]
+}
+
+resource "aws_eks_access_policy_association" "admin" {
+  cluster_name  = var.cluster_name
+  principal_arn = "arn:aws:iam::093796422475:user/Start-Tech"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.admin]
 }

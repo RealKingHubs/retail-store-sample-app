@@ -49,6 +49,11 @@ resource "aws_eks_cluster" "main" {
   version  = "1.31"
   role_arn = aws_iam_role.cluster.arn
 
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   vpc_config {
     subnet_ids              = concat(var.private_subnet_ids, var.public_subnet_ids)
     security_group_ids      = [aws_security_group.cluster.id]
