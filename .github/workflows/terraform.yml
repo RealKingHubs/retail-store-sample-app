@@ -51,6 +51,7 @@ jobs:
           aws eks update-kubeconfig \
             --name project-bedrock-cluster \
             --region ${{ env.AWS_REGION }}
+          echo "KUBE_CONFIG_PATH=$HOME/.kube/config" >> $GITHUB_ENV
 
       - name: Terraform Format Check
         working-directory: ${{ env.TF_WORKING_DIR }}
@@ -65,6 +66,7 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          KUBE_CONFIG_PATH: ${{ env.KUBE_CONFIG_PATH }}
         run: |
           terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
           echo "plan_exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
@@ -126,9 +128,11 @@ jobs:
           aws eks update-kubeconfig \
             --name project-bedrock-cluster \
             --region ${{ env.AWS_REGION }}
+          echo "KUBE_CONFIG_PATH=$HOME/.kube/config" >> $GITHUB_ENV
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          KUBE_CONFIG_PATH: ${{ env.KUBE_CONFIG_PATH }}
         run: terraform apply -auto-approve
