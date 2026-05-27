@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: retail-app
+  labels:
+    app: checkout
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout
+  template:
+    metadata:
+      labels:
+        app: checkout
+    spec:
+      containers:
+        - name: checkout
+          image: public.ecr.aws/aws-containers/retail-store-sample-checkout:0.8.5
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RETAIL_CHECKOUT_PERSISTENCE_PROVIDER
+              value: "redis"
+            - name: RETAIL_CHECKOUT_PERSISTENCE_REDIS_HOST
+              value: "redis"
+            - name: RETAIL_CHECKOUT_PERSISTENCE_REDIS_PORT
+              value: "6379"
+            - name: RETAIL_CHECKOUT_ORDERS_URL
+              value: "http://orders"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+  namespace: retail-app
+spec:
+  selector:
+    app: checkout
+  ports:
+    - port: 80
+      targetPort: 8080
