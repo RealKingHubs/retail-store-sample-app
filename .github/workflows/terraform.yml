@@ -46,6 +46,12 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --name project-bedrock-cluster \
+            --region ${{ env.AWS_REGION }}
+
       - name: Terraform Format Check
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check -recursive
@@ -114,6 +120,12 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --name project-bedrock-cluster \
+            --region ${{ env.AWS_REGION }}
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}
