@@ -1,0 +1,8 @@
+image:
+  tag: "0.8.5"
+
+postgresql:
+  create: false
+
+rabbitmq:
+  create: true

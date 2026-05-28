@@ -1,0 +1,8 @@
+image:
+  tag: "0.8.5"
+
+mysql:
+  create: false
+
+configMap:
+  create: true

@@ -1,0 +1,9 @@
+image:
+  tag: "0.8.5"
+
+app:
+  endpoints:
+    catalog: "http://catalog"
+    carts: "http://cart"
+    checkout: "http://checkout"
+    orders: "http://orders"

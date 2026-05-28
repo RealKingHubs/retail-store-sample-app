@@ -1,0 +1,16 @@
+image:
+  tag: "0.8.5"
+
+serviceAccount:
+  create: false
+  name: cart-service-account
+
+app:
+  persistence:
+    provider: dynamodb
+    dynamodb:
+      tableName: retailstore-cart
+      createTable: false
+
+dynamodb:
+  create: false

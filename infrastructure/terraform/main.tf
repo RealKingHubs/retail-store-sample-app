@@ -282,3 +282,184 @@ resource "aws_eks_access_policy_association" "admin" {
 
   depends_on = [aws_eks_access_entry.admin]
 }
+
+
+resource "helm_release" "catalog" {
+  name            = "catalog"
+  chart           = "${path.module}/../../src/catalog/chart"
+  namespace       = var.app_namespace
+  wait            = true
+  timeout         = 300
+  force_update    = true
+  cleanup_on_fail = true
+
+  set {
+    name  = "image.tag"
+    value = "0.8.5"
+  }
+
+  set {
+    name  = "app.persistence.provider"
+    value = "mysql"
+  }
+
+  set {
+    name  = "app.persistence.endpoint"
+    value = "${module.rds.mysql_endpoint}:3306"
+  }
+
+  set {
+    name  = "app.persistence.database"
+    value = "catalog"
+  }
+
+  set {
+    name  = "app.persistence.secret.create"
+    value = "false"
+  }
+
+  set {
+    name  = "app.persistence.secret.name"
+    value = "catalog-db"
+  }
+
+  set {
+    name  = "mysql.create"
+    value = "false"
+  }
+
+  depends_on = [
+    kubernetes_namespace_v1.retail_app,
+    kubernetes_secret_v1.mysql_credentials
+  ]
+}
+
+resource "helm_release" "cart" {
+  name            = "cart"
+  chart           = "${path.module}/../../src/cart/chart"
+  namespace       = var.app_namespace
+  wait            = true
+  timeout         = 300
+  force_update    = true
+  cleanup_on_fail = true
+
+  values = [file("${path.module}/../../infrastructure/helm/cart-values.yaml")]
+
+  depends_on = [
+    kubernetes_namespace_v1.retail_app,
+    kubernetes_service_account_v1.cart
+  ]
+}
+
+resource "helm_release" "orders" {
+  name            = "orders"
+  chart           = "${path.module}/../../src/orders/chart"
+  namespace       = var.app_namespace
+  wait            = true
+  timeout         = 300
+  force_update    = true
+  cleanup_on_fail = true
+
+  set {
+    name  = "image.tag"
+    value = "0.8.5"
+  }
+
+  set {
+    name  = "app.persistence.provider"
+    value = "postgres"
+  }
+
+  set {
+    name  = "app.persistence.endpoint"
+    value = "${module.rds.postgres_endpoint}:5432"
+  }
+
+  set {
+    name  = "app.persistence.database"
+    value = "orders"
+  }
+
+  set {
+    name  = "app.persistence.secret.create"
+    value = "false"
+  }
+
+  set {
+    name  = "app.persistence.secret.name"
+    value = "orders-db"
+  }
+
+  set {
+    name  = "app.messaging.provider"
+    value = "rabbitmq"
+  }
+
+  set {
+    name  = "app.messaging.rabbitmq.addresses"
+    value = "rabbitmq:5672"
+  }
+
+  set {
+    name  = "app.messaging.rabbitmq.secret.create"
+    value = "false"
+  }
+
+  set {
+    name  = "app.messaging.rabbitmq.secret.name"
+    value = "orders-rabbitmq"
+  }
+
+  set {
+    name  = "postgresql.create"
+    value = "false"
+  }
+
+  set {
+    name  = "rabbitmq.create"
+    value = "true"
+  }
+
+  depends_on = [
+    kubernetes_namespace_v1.retail_app,
+    kubernetes_secret_v1.postgres_credentials,
+    kubernetes_secret_v1.rabbitmq_credentials
+  ]
+}
+
+resource "helm_release" "checkout" {
+  name            = "checkout"
+  chart           = "${path.module}/../../src/checkout/chart"
+  namespace       = var.app_namespace
+  wait            = true
+  timeout         = 300
+  force_update    = true
+  cleanup_on_fail = true
+
+  values = [file("${path.module}/../../infrastructure/helm/checkout-values.yaml")]
+
+  depends_on = [
+    kubernetes_namespace_v1.retail_app,
+    helm_release.orders
+  ]
+}
+
+resource "helm_release" "ui" {
+  name            = "ui"
+  chart           = "${path.module}/../../src/ui/chart"
+  namespace       = var.app_namespace
+  wait            = true
+  timeout         = 300
+  force_update    = true
+  cleanup_on_fail = true
+
+  values = [file("${path.module}/../../infrastructure/helm/ui-values.yaml")]
+
+  depends_on = [
+    kubernetes_namespace_v1.retail_app,
+    helm_release.catalog,
+    helm_release.cart,
+    helm_release.orders,
+    helm_release.checkout
+  ]
+}
