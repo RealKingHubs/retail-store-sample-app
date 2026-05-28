@@ -3,7 +3,10 @@ services:
     build:
       context: .
     hostname: catalog
-    # Removed depends_on catalog-db since we are pointing to AWS RDS MySQL
+    depends_on:
+      catalog-db:
+        condition: service_healthy
+        restart: true
     restart: always
     cap_drop:
       - all
@@ -13,11 +16,8 @@ services:
       - GIN_MODE=release
       - reschedule=on-node-failure
       - RETAIL_CATALOG_PERSISTENCE_PROVIDER=mysql
-      # Clean configurations matching your active Kubernetes secrets & configuration keys
-      - RETAIL_CATALOG_PERSISTENCE_USER=${DB_USERNAME}
       - RETAIL_CATALOG_PERSISTENCE_PASSWORD=${DB_PASSWORD}
-      - RETAIL_CATALOG_PERSISTENCE_DB_NAME=catalog
-      - RETAIL_CATALOG_PERSISTENCE_ENDPOINT=://amazonaws.com
+      - RETAIL_CATALOG_PERSISTENCE_ENDPOINT=catalog-db:3306
     ports:
       - "8081:8080"
     healthcheck:
@@ -29,3 +29,34 @@ services:
       watch:
         - action: rebuild
           path: .
+
+  # nosemgrep: yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service
+  catalog-db:
+    image: mariadb:10.9
+    hostname: catalog-db
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - reschedule=on-node-failure
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=catalogdb
+      - MYSQL_USER=catalog_user
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "catalog_user",
+          "-p${DB_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
