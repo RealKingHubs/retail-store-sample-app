@@ -27,3 +27,8 @@ output "cart_role_arn" {
   description = "IAM role ARN for cart service DynamoDB access"
   value       = aws_iam_role.cart.arn
 }
+
+output "app_url" {
+  description = "URL of the retail store application"
+  value       = length(kubernetes_ingress_v1.retail_app.status[0].load_balancer[0].ingress) > 0 ? "http://${kubernetes_ingress_v1.retail_app.status[0].load_balancer[0].ingress[0].hostname}" : "ALB still provisioning - run terraform output app_url after a few minutes"
+}

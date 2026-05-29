@@ -123,6 +123,9 @@ resource "kubernetes_secret_v1" "postgres_credentials" {
   data = {
     RETAIL_ORDERS_PERSISTENCE_USER     = var.db_username
     RETAIL_ORDERS_PERSISTENCE_PASSWORD = var.db_password
+    RETAIL_ORDERS_PERSISTENCE_USERNAME = var.db_username
+    username                           = var.db_username
+    password                           = var.db_password
   }
 
   depends_on = [
@@ -130,6 +133,7 @@ resource "kubernetes_secret_v1" "postgres_credentials" {
     module.rds
   ]
 }
+
 
 resource "kubernetes_secret_v1" "rabbitmq_credentials" {
   metadata {
@@ -186,9 +190,13 @@ resource "aws_iam_policy" "cart_dynamodb" {
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
           "dynamodb:Query",
-          "dynamodb:Scan"
+          "dynamodb:Scan",
+          "dynamodb:DescribeTable"
         ]
-        Resource = module.dynamodb.cart_table_arn
+        Resource = [
+          module.dynamodb.cart_table_arn,
+          "${module.dynamodb.cart_table_arn}/index/*"
+        ]
       }
     ]
   })
@@ -198,11 +206,11 @@ resource "aws_iam_policy" "cart_dynamodb" {
   }
 }
 
+
 resource "aws_iam_role_policy_attachment" "cart_dynamodb" {
   role       = aws_iam_role.cart.name
   policy_arn = aws_iam_policy.cart_dynamodb.arn
 }
-
 # Update the cart service account with the correct IAM role ARN
 resource "kubernetes_service_account_v1" "cart" {
   metadata {
@@ -293,10 +301,10 @@ resource "helm_release" "catalog" {
   force_update    = true
   cleanup_on_fail = true
 
-  set {
-    name  = "image.tag"
-    value = "0.8.5"
-  }
+ set {
+  name  = "image.tag"
+  value = "1.2.1"
+}
 
   set {
     name  = "app.persistence.provider"
@@ -326,6 +334,54 @@ resource "helm_release" "catalog" {
   set {
     name  = "mysql.create"
     value = "false"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-java"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-nodejs"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-python"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-dotnet"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-java"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-nodejs"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-python"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-dotnet"
+    value = "false"
+    type  = "string"
   }
 
   depends_on = [
@@ -360,10 +416,10 @@ resource "helm_release" "orders" {
   force_update    = true
   cleanup_on_fail = true
 
-  set {
-    name  = "image.tag"
-    value = "0.8.5"
-  }
+set {
+  name  = "image.tag"
+  value = "1.2.1"
+}
 
   set {
     name  = "app.persistence.provider"
@@ -461,5 +517,46 @@ resource "helm_release" "ui" {
     helm_release.cart,
     helm_release.orders,
     helm_release.checkout
+  ]
+}
+
+
+
+resource "kubernetes_ingress_v1" "retail_app" {
+  metadata {
+    name      = "retail-store-ingress"
+    namespace = var.app_namespace
+    annotations = {
+      "kubernetes.io/ingress.class"                        = "alb"
+      "alb.ingress.kubernetes.io/scheme"                   = "internet-facing"
+      "alb.ingress.kubernetes.io/target-type"              = "ip"
+      "alb.ingress.kubernetes.io/listen-ports"             = "[{\"HTTP\": 80}]"
+      "alb.ingress.kubernetes.io/healthcheck-path"         = "/actuator/health/liveness"
+      "alb.ingress.kubernetes.io/healthcheck-interval-seconds" = "30"
+    }
+  }
+
+  spec {
+    rule {
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "ui"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.ui,
+    helm_release.alb_controller
   ]
 }
