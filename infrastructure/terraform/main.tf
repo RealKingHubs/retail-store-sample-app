@@ -509,7 +509,78 @@ resource "helm_release" "ui" {
   force_update    = true
   cleanup_on_fail = true
 
-  values = [file("${path.module}/../../infrastructure/helm/ui-values.yaml")]
+  set {
+    name  = "image.tag"
+    value = "1.2.1"
+  }
+
+  set {
+    name  = "app.endpoints.catalog"
+    value = "http://catalog"
+  }
+
+  set {
+    name  = "app.endpoints.carts"
+    value = "http://cart-carts"
+  }
+
+  set {
+    name  = "app.endpoints.checkout"
+    value = "http://checkout"
+  }
+
+  set {
+    name  = "app.endpoints.orders"
+    value = "http://orders"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-java"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-nodejs"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-python"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.instrumentation\\.opentelemetry\\.io/inject-dotnet"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-java"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-nodejs"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-python"
+    value = "false"
+    type  = "string"
+  }
+
+  set {
+    name  = "podAnnotations.cloudwatch\\.aws\\.amazon\\.com/auto-annotate-dotnet"
+    value = "false"
+    type  = "string"
+  }
 
   depends_on = [
     kubernetes_namespace_v1.retail_app,
