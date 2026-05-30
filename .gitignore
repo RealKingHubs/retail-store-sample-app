@@ -40,7 +40,8 @@ screenshots
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-a-script/infrastructure/terraform/terraform.tfvars
+a-script/
+infrastructure/terraform/terraform.tfvars
 infrastructure/terraform/modules/s3-lambda/lambda/handler.zip
 infrastructure/terraform/.terraform/
 infrastructure/terraform/.terraform.lock.hcl
