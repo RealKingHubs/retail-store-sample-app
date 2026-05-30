@@ -46,7 +46,7 @@ resource "aws_security_group" "cluster" {
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
-  version  = "1.31"
+  version  = "1.32"
   role_arn = aws_iam_role.cluster.arn
 
   access_config {
@@ -78,7 +78,7 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
-# OIDC provider for the cluster (needed for IRSA - IAM Roles for Service Accounts)
+# OIDC provider for the cluster
 data "tls_certificate" "cluster" {
   url = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
