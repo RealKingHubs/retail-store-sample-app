@@ -137,4 +137,4 @@ jobs:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_db_username: ${{ secrets.TF_VAR_DB_USERNAME }}
           KUBE_CONFIG_PATH: ${{ env.KUBE_CONFIG_PATH }}
-        run: terraform apply -auto-approve
+        run: terraform destroy -auto-approve
