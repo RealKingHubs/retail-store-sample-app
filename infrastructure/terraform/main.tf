@@ -638,3 +638,21 @@ resource "kubernetes_ingress_v1" "retail_app" {
     helm_release.alb_controller
   ]
 }
+
+#=================================================
+#OIDC ADMINISTRATION PERMISSIONS FOR EKS CLUSTER CREATOR
+resource "aws_eks_access_entry" "github_actions_pipeline" {
+  cluster_name  = "project-bedrock-cluster"
+  principal_arn = "arn:aws:iam::093796422475:role/github-actions-bedrock-role"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "github_actions_admin_policy" {
+  cluster_name  = "project-bedrock-cluster"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = aws_eks_access_entry.github_actions_pipeline.principal_arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
