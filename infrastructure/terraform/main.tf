@@ -639,9 +639,9 @@ resource "kubernetes_ingress_v1" "retail_app" {
   ]
 }
 
-#===============================================
+#====================================================
 #OIDC ADMINISTRATION PERMISSIONS FOR EKS CLUSTER
-#===============================================
+#=====================================================
 resource "aws_eks_access_entry" "github_actions_pipeline" {
   cluster_name  = "project-bedrock-cluster"
   principal_arn = "arn:aws:iam::093796422475:role/github-actions-bedrock-role"
