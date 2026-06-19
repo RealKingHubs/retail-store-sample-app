@@ -17,6 +17,16 @@
 
 This is a sample application designed to illustrate various concepts related to containers on AWS. It presents a sample retail store application including a product catalog, shopping cart and checkout.
 
+## Project Bedrock Capstone
+
+This repository also contains a Project Bedrock capstone deployment for running the retail store sample app on Amazon EKS with Terraform, Helm, managed AWS databases, developer access, CloudWatch logging, and an S3 to Lambda asset flow.
+
+Read the capstone guide here: [Project Bedrock Capstone Documentation](./docs/PROJECT_BEDROCK_README.md).
+
+### Cleanup and Cost Control
+
+EKS clusters, worker nodes, RDS instances, NAT gateways, ALBs, and other resources can incur ongoing charges. Destroy the environment when it is not needed.
+
 It provides:
 
 - A demo store-front application with themes, pages to show container and application topology information, generative AI chat bot and utility functions for experimentation and demos.

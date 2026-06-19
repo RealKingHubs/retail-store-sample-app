@@ -46,7 +46,7 @@ resource "aws_security_group" "cluster" {
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
-  version  = "1.32"
+  version  = "1.34"
   role_arn = aws_iam_role.cluster.arn
 
   access_config {
@@ -170,6 +170,7 @@ resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.cluster_name}-node-group"
   node_role_arn   = aws_iam_role.node_group.arn
+  version         = aws_eks_cluster.main.version
   subnet_ids      = var.private_subnet_ids
   instance_types  = [var.node_instance_type]
 
@@ -250,4 +251,3 @@ resource "aws_iam_role_policy_attachment" "alb_controller" {
   role       = aws_iam_role.alb_controller.name
   policy_arn = aws_iam_policy.alb_controller.arn
 }
-
